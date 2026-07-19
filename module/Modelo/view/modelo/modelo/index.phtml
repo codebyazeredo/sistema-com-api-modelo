@@ -1,0 +1,64 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var list<\Modelo\Entity\ModeloItem> $itens
+ */
+$this->headTitle('Módulo Modelo');
+$deleteCsrf = new \Laminas\Form\Element\Csrf('delete_csrf');
+?>
+<div class="max-w-3xl">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-gray-900">Módulo Modelo</h1>
+        <a
+            href="<?= $this->url('modelo', ['action' => 'add']) ?>"
+            class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+        >
+            Novo item
+        </a>
+    </div>
+    <p class="mt-2 text-sm text-gray-600">
+        Exemplo de CRUD (Controller + Entity + Repository + Form + View) —
+        copie esse padrão para o módulo real que substituirá este.
+    </p>
+
+    <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <?php if (empty($itens)): ?>
+        <p class="px-6 py-8 text-center text-sm text-gray-500">Nenhum item cadastrado ainda.</p>
+        <?php else: ?>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Título</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Descrição</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <?php foreach ($itens as $item): ?>
+                <tr>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900"><?= $this->escapeHtml($item->getTitulo()) ?></td>
+                    <td class="px-4 py-3 text-sm text-gray-600"><?= $this->escapeHtml($item->getDescricao() ?? '') ?></td>
+                    <td class="px-4 py-3 text-right text-sm">
+                        <a
+                            href="<?= $this->url('modelo', ['action' => 'edit', 'id' => $item->getId()]) ?>"
+                            class="text-blue-600 hover:underline"
+                        >
+                            Editar
+                        </a>
+                        <form
+                            method="post"
+                            action="<?= $this->url('modelo', ['action' => 'delete', 'id' => $item->getId()]) ?>"
+                            class="inline"
+                            onsubmit="return confirm('Excluir este item?');"
+                        >
+                            <input type="hidden" name="delete_csrf" value="<?= $this->escapeHtmlAttr((string) $deleteCsrf->getValue()) ?>">
+                            <button type="submit" class="ml-3 text-red-600 hover:underline">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
+</div>

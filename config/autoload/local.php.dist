@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Local Configuration Override
+ *
+ * This configuration override file is for overriding environment-specific and
+ * security-sensitive configuration information. Copy this file without the
+ * .dist extension at the end and populate values as needed.
+ *
+ * NOTE: This file is ignored from Git by default with the .gitignore included
+ * in laminas-mvc-skeleton. This is a good practice, as it prevents sensitive
+ * credentials from accidentally being committed into version control.
+ */
+
+return [
+    'doctrine' => [
+        'connection' => [
+            'orm_default' => [
+                'params' => [
+                    'host' => '127.0.0.1',
+                    'port' => '3306',
+                    'user' => 'root',
+                    'password' => '',
+                    'dbname' => 'sistema_com_api_modelo',
+                ],
+            ],
+        ],
+    ],
+
+    // JWT da API (módulo Api) consumida pelo app. Gere um segredo forte, por
+    // exemplo: php -r "echo bin2hex(random_bytes(32));"
+    // NUNCA reaproveite este exemplo nem commit o valor real.
+    'jwt' => [
+        'secret' => 'troque-por-um-segredo-aleatorio-de-32-bytes-no-minimo',
+    ],
+
+    // Origens permitidas a chamar a API (módulo Api) via CORS. Vazio por
+    // padrão = nenhuma origem de browser é aceita (apps mobile não enviam
+    // Origin, então não são afetados por CORS).
+    'cors' => [
+        'allowed_origins' => [
+            // 'https://meuapp.com',
+        ],
+    ],
+];

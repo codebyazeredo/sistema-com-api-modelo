@@ -1,0 +1,98 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ */
+$usuario = $this->identity();
+?>
+<?= $this->doctype() ?>
+<html lang="pt-br" class="h-full bg-gray-50">
+<head>
+    <meta charset="utf-8">
+    <?= $this->headTitle('Sistema')->setSeparator(' · ')->setAutoEscape(false) ?>
+    <?= $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1.0') ?>
+    <link rel="stylesheet" href="<?= $this->basePath('css/app.css') ?>">
+    <?= $this->headScript() ?>
+</head>
+<body class="h-full" x-data="{ sidebarOpen: false, userMenuOpen: false }">
+
+<div class="min-h-full">
+    <!-- Sidebar (desktop: fixa; mobile: off-canvas) -->
+    <div
+        class="fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-gray-200 transform transition-transform md:translate-x-0"
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+        <div class="flex items-center h-16 px-6 text-white font-semibold text-lg border-b border-gray-800">
+            Sistema Modelo
+        </div>
+        <nav class="px-3 py-4 space-y-1">
+            <a href="<?= $this->url('home') ?>"
+               class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-800 hover:text-white">
+                Início
+            </a>
+            <a href="<?= $this->url('modelo') ?>"
+               class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-800 hover:text-white">
+                Módulo Modelo
+            </a>
+        </nav>
+    </div>
+
+    <!-- Overlay mobile -->
+    <div
+        x-show="sidebarOpen"
+        x-cloak
+        @click="sidebarOpen = false"
+        class="fixed inset-0 z-30 bg-black/40 md:hidden"
+    ></div>
+
+    <div class="md:pl-64 flex flex-col min-h-full">
+        <!-- Navbar -->
+        <header class="sticky top-0 z-20 flex items-center justify-between h-16 px-4 sm:px-6 bg-white border-b border-gray-200">
+            <button
+                type="button"
+                class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100"
+                @click="sidebarOpen = !sidebarOpen"
+                aria-label="Abrir menu"
+            >
+                ☰
+            </button>
+
+            <div class="flex-1"></div>
+
+            <?php if ($usuario): ?>
+            <div class="relative" @click.outside="userMenuOpen = false">
+                <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    @click="userMenuOpen = !userMenuOpen"
+                >
+                    <?= $this->escapeHtml($usuario['nome'] ?? $usuario['login'] ?? 'Usuário') ?>
+                </button>
+                <div
+                    x-show="userMenuOpen"
+                    x-cloak
+                    class="absolute right-0 mt-2 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                >
+                    <?php
+                    $logoutCsrf = new \Laminas\Form\Element\Csrf('logout_csrf');
+                    ?>
+                    <form method="post" action="<?= $this->url('logout') ?>">
+                        <input type="hidden" name="logout_csrf" value="<?= $this->escapeHtmlAttr((string) $logoutCsrf->getValue()) ?>">
+                        <button type="submit" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                            Sair
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+        </header>
+
+        <!-- Conteúdo da página -->
+        <main class="flex-1 px-4 sm:px-6 py-6">
+            <?= $this->content ?>
+        </main>
+    </div>
+</div>
+
+<script src="<?= $this->basePath('js/alpine.min.js') ?>" defer></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ */
+?>
+<?= $this->doctype() ?>
+<html lang="pt-br" class="h-full bg-gray-900">
+<head>
+    <meta charset="utf-8">
+    <?= $this->headTitle('Entrar')->setSeparator(' · ')->setAutoEscape(false) ?>
+    <?= $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1.0') ?>
+    <link rel="stylesheet" href="<?= $this->basePath('css/app.css') ?>">
+    <?= $this->headScript() ?>
+</head>
+<body class="h-full flex items-center justify-center px-4">
+    <?= $this->content ?>
+</body>
+</html>

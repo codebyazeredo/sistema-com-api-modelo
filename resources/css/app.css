@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Evita "flash" de elementos com x-show antes do Alpine.js inicializar. */
+[x-cloak] {
+  display: none !important;
+}

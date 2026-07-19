@@ -1,0 +1,59 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var \Modelo\Form\ModeloItemForm $form
+ * @var string $modo
+ * @var \Modelo\Entity\ModeloItem|null $item
+ */
+$this->headTitle($modo === 'edit' ? 'Editar item' : 'Novo item');
+$form->prepare();
+
+$titulo = $form->get('titulo');
+$descricao = $form->get('descricao');
+$csrf = $form->get('modelo_item_csrf');
+
+$actionUrl = $modo === 'edit'
+    ? $this->url('modelo', ['action' => 'edit', 'id' => $item?->getId()])
+    : $this->url('modelo', ['action' => 'add']);
+?>
+<div class="max-w-xl">
+    <h1 class="text-2xl font-semibold text-gray-900">
+        <?= $modo === 'edit' ? 'Editar item' : 'Novo item' ?>
+    </h1>
+
+    <form method="post" action="<?= $actionUrl ?>" class="mt-6 space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div>
+            <label for="titulo" class="block text-sm font-medium text-gray-700">
+                <?= $this->escapeHtml($titulo->getLabel()) ?>
+            </label>
+            <input
+                type="text"
+                name="titulo"
+                id="titulo"
+                value="<?= $this->escapeHtmlAttr((string) $titulo->getValue()) ?>"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+        </div>
+
+        <div>
+            <label for="descricao" class="block text-sm font-medium text-gray-700">
+                <?= $this->escapeHtml($descricao->getLabel()) ?>
+            </label>
+            <textarea
+                name="descricao"
+                id="descricao"
+                rows="4"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            ><?= $this->escapeHtml((string) $descricao->getValue()) ?></textarea>
+        </div>
+
+        <input type="hidden" name="modelo_item_csrf" value="<?= $this->escapeHtmlAttr((string) $csrf->getValue()) ?>">
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                Salvar
+            </button>
+            <a href="<?= $this->url('modelo') ?>" class="text-sm text-gray-600 hover:underline">Cancelar</a>
+        </div>
+    </form>
+</div>

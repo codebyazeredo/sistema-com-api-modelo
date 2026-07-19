@@ -1,0 +1,16 @@
+/.phpcs-cache
+/.phpunit.cache
+/.psalm-cache
+vendor/
+config/development.config.php
+data/cache/*
+!data/cache/.gitkeep
+phpunit.xml
+
+# Segredos (DB, JWT secret, allow-list de CORS) — copie de local.php.dist
+config/autoload/local.php
+
+# Frontend: node_modules e artefatos de build (gerados por `npm run build`)
+node_modules/
+public/css/app.css
+public/js/alpine.min.js
