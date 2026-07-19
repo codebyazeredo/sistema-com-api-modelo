@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Api\Repository;
 
 use Api\Entity\RefreshToken;
-use Auth\Entity\Usuario;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityRepository;
 
@@ -17,15 +16,19 @@ class RefreshTokenRepository extends EntityRepository
         return $this->findOneBy(['tokenHash' => $tokenHash]);
     }
 
-    public function revogarTodosDoUsuario(Usuario $usuario): void
+    /**
+     * Revoga por ID do usuário via `IDENTITY()` — evita ter que carregar a
+     * Entity `Usuario` só para filtrar a query.
+     */
+    public function revogarTodosPorUsuarioId(int $usuarioId): void
     {
         $this->createQueryBuilder('rt')
             ->update()
             ->set('rt.revokedAt', ':agora')
-            ->andWhere('rt.usuario = :usuario')
+            ->andWhere('IDENTITY(rt.usuario) = :usuarioId')
             ->andWhere('rt.revokedAt IS NULL')
             ->setParameter('agora', new DateTimeImmutable())
-            ->setParameter('usuario', $usuario)
+            ->setParameter('usuarioId', $usuarioId)
             ->getQuery()
             ->execute();
     }

@@ -4,32 +4,31 @@ declare(strict_types=1);
 
 namespace Modelo\Controller;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Laminas\Http\Response;
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\Validator\Csrf as CsrfValidator;
 use Laminas\View\Model\ViewModel;
-use Modelo\Entity\ModeloItem;
 use Modelo\Form\ModeloItemForm;
-use Modelo\Repository\ModeloItemRepository;
+use Modelo\Service\ModeloItemService;
 
 /**
- * CRUD de EXEMPLO — copie este padrão (Controller + Entity + Repository +
- * Form + View) ao adicionar a regra de negócio real do sistema. Protegido
- * pelo mesmo guard de sessão do dashboard (Application\Listener\AuthGuardListener).
+ * CRUD de EXEMPLO — copie este padrão (Controller + Service + Entity +
+ * Repository + Form + View) ao adicionar a regra de negócio real do
+ * sistema. Protegido pelo mesmo guard de sessão do dashboard
+ * (Application\Listener\AuthGuardListener).
+ *
+ * Nunca importa `Modelo\Entity\ModeloItem` — só o array devolvido por
+ * `ModeloItemService`.
  */
 final class ModeloController extends AbstractActionController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly ModeloItemService $modeloItemService)
     {
     }
 
     public function indexAction(): ViewModel
     {
-        /** @var ModeloItemRepository $repositorio */
-        $repositorio = $this->entityManager->getRepository(ModeloItem::class);
-
-        return new ViewModel(['itens' => $repositorio->listarTodos()]);
+        return new ViewModel(['itens' => $this->modeloItemService->listarTodos()]);
     }
 
     public function addAction(): ViewModel|Response
@@ -43,9 +42,7 @@ final class ModeloController extends AbstractActionController
                 $data = $form->getData();
                 $descricao = (string) $data['descricao'];
 
-                $item = new ModeloItem((string) $data['titulo'], $descricao !== '' ? $descricao : null);
-                $this->entityManager->persist($item);
-                $this->entityManager->flush();
+                $this->modeloItemService->criar((string) $data['titulo'], $descricao !== '' ? $descricao : null);
 
                 return $this->redirect()->toRoute('modelo');
             }
@@ -57,14 +54,14 @@ final class ModeloController extends AbstractActionController
     public function editAction(): ViewModel|Response
     {
         $id = (int) $this->params()->fromRoute('id', 0);
-        $item = $this->entityManager->find(ModeloItem::class, $id);
+        $item = $this->modeloItemService->encontrar($id);
 
         if ($item === null) {
             return $this->redirect()->toRoute('modelo');
         }
 
         $form = new ModeloItemForm();
-        $form->setData(['titulo' => $item->getTitulo(), 'descricao' => $item->getDescricao()]);
+        $form->setData(['titulo' => $item['titulo'], 'descricao' => $item['descricao']]);
 
         if ($this->getRequest()->isPost()) {
             $form->setData($this->params()->fromPost());
@@ -73,11 +70,11 @@ final class ModeloController extends AbstractActionController
                 $data = $form->getData();
                 $descricao = (string) $data['descricao'];
 
-                $item->setTitulo((string) $data['titulo']);
-                $item->setDescricao($descricao !== '' ? $descricao : null);
-                $this->entityManager->flush();
+                $atualizado = $this->modeloItemService->atualizar($id, (string) $data['titulo'], $descricao !== '' ? $descricao : null);
 
-                return $this->redirect()->toRoute('modelo');
+                if ($atualizado !== null) {
+                    return $this->redirect()->toRoute('modelo');
+                }
             }
         }
 
@@ -91,13 +88,7 @@ final class ModeloController extends AbstractActionController
             $token = (string) $this->params()->fromPost('delete_csrf', '');
 
             if ($csrfValidator->isValid($token)) {
-                $id = (int) $this->params()->fromRoute('id', 0);
-                $item = $this->entityManager->find(ModeloItem::class, $id);
-
-                if ($item !== null) {
-                    $this->entityManager->remove($item);
-                    $this->entityManager->flush();
-                }
+                $this->modeloItemService->remover((int) $this->params()->fromRoute('id', 0));
             }
         }
 

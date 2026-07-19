@@ -53,19 +53,29 @@ Comandos disponíveis (aliases de composer):
 | `composer database:clear` | Só limpa os caches de metadata/result/query do Doctrine. |
 | `composer database:enum` | **Placeholder** — ponto de extensão pra sincronizar tabelas de enum/lookup do seu domínio (`bin/database-enum.php`); não faz nada até você implementar, já que o esqueleto não define nenhum enum de domínio. |
 | `composer test:local` | `database:enum` + `database:update` + `phpunit` — fluxo rápido antes de rodar os testes localmente. |
+| `composer user:create` | Cria um usuário (login=`admin` senha=`senha123` por padrão) ou reseta a senha se o login já existir — hash sempre via `PasswordHasher` (Argon2id), nunca texto puro. |
 
 Fluxo típico do zero:
 
 ```bash
 composer database:create
 composer database:update    # ou: vendor/bin/doctrine-module orm:schema-tool:create
+composer user:create        # cria admin/senha123 pra logar no dashboard/API
 ```
 
-Não há usuário nenhum por padrão — crie um usando
-`Application\Service\PasswordHasher::hash()` para gerar o hash da senha
-(nunca insira senha em texto puro na tabela `usuario`), por exemplo com um
-script pontual em `bin/` que persista uma `Auth\Entity\Usuario` via o
-`EntityManager` (`config/container.php`).
+### Criar um usuário
+
+Não há usuário nenhum por padrão. Use o comando acima com os valores
+padrão, ou passe os seus (login, senha, nome, email — nessa ordem):
+
+```bash
+composer user:create -- teste teste123 "Usuário de Teste" teste@exemplo.com
+# equivalente direto, sem passar pelo composer:
+php bin/create-user.php teste teste123 "Usuário de Teste" teste@exemplo.com
+```
+
+Se o `login` já existir, o comando só atualiza a senha (não duplica o
+usuário) — útil pra "esqueci a senha" durante o desenvolvimento.
 
 ## Estrutura
 
@@ -74,8 +84,14 @@ module/
   Application/   camada compartilhada: layout do dashboard (navbar+sidebar),
                   cabeçalhos de segurança, PasswordHasher, guard de sessão
   Auth/           login web por SESSÃO (cookie) — Usuario, throttle de login
-  Api/            API JWT consumida pelo app — login/refresh/logout, /me
-  Modelo/         MÓDULO DE EXEMPLO (CRUD) — copie este padrão pro real
+  Api/            API JWT consumida pelo app — login/refresh/logout, /me,
+                  pessoas (reaproveita o módulo Pessoa)
+  Modelo/         MÓDULO DE EXEMPLO simples (CRUD só no dashboard, mas já
+                  com Service — Controller nunca toca a Entity) — copie
+                  este padrão quando NÃO precisar do cadastro na API/app
+  Pessoa/         MÓDULO DE EXEMPLO completo (CRUD + upload de foto + Service
+                  compartilhado com a API) — copie este padrão quando o
+                  cadastro também precisar aparecer no app
 
 resources/css/app.css   fonte do Tailwind (não editar public/css/app.css à mão)
 tailwind.config.js      content aponta para module/**/view/**/*.phtml
@@ -89,8 +105,12 @@ centralizado ao adicionar um módulo novo.
 
 ## Como adicionar um módulo novo
 
-1. Copie a pasta `module/Modelo` (Controller + Entity + Repository + Form +
-   View) e renomeie para o domínio real.
+**Só dashboard, sem API** — copie o padrão do `module/Modelo`:
+
+1. Copie a pasta `module/Modelo` (Controller + Service + Entity +
+   Repository + Form + View) e renomeie para o domínio real. Mantenha o
+   Controller falando só com o Service (nunca com a Entity — ver "Regra de
+   arquitetura" abaixo).
 2. Ajuste o namespace (`Modelo\...` → `SeuModulo\...`), as rotas e o driver
    Doctrine (`'SeuModulo\Entity' => 'seumodulo_entities'`) no
    `module.config.php` copiado.
@@ -99,6 +119,10 @@ centralizado ao adicionar um módulo novo.
 4. Adicione o nome do módulo em `config/modules.config.php`.
 5. Se as telas ficam no dashboard, adicione um link em
    `module/Application/view/layout/layout.phtml`.
+
+**Dashboard + API (o cadastro também precisa aparecer no app)** — copie o
+padrão do `module/Pessoa`, que já tem a camada de `Service` compartilhada.
+Veja a seção seguinte.
 
 ## Autenticação — duas superfícies, um usuário
 
@@ -124,6 +148,80 @@ usuário, dois jeitos de provar identidade.
 > `/auth/refresh`) — então a sessão do app expira em 1h até o client ser
 > atualizado para adotar o fluxo de refresh. Isso é intencional: o backend
 > já está pronto para refresh token, falta o app adotar.
+
+## Exemplo completo: um cadastro que existe no sistema E no app (`Pessoa`)
+
+Padrão pra qualquer cadastro do dashboard que também precisa aparecer no
+app (ex.: cadastro de pessoa, com foto tirada pela câmera) — **um domínio,
+duas portas de entrada**:
+
+- `Pessoa\Entity\Pessoa` + `Pessoa\Repository\PessoaRepository` — o dado,
+  único, compartilhado. **Só o `Service` toca a Entity** (ver regra abaixo).
+- `Pessoa\Service\PessoaService` — a regra de negócio (criar/atualizar/
+  remover, validar e salvar a foto). **Os dois controllers chamam o mesmo
+  Service** — nenhuma regra é escrita duas vezes. Todo método público
+  recebe/devolve `array` (nunca a Entity).
+- `Pessoa\Controller\PessoaController` — CRUD do dashboard (HTML/Tailwind).
+- `Api\Controller\PessoaApiController` — os mesmos dados/regra, em JSON,
+  pro app consumir (`use Pessoa\Service\PessoaService;` — só isso já dá
+  acesso a tudo que o módulo `Pessoa` define; note que **não** importa
+  `Pessoa\Entity\Pessoa`).
+
+Nome de classe **deliberadamente diferente** entre os dois controllers
+(`PessoaController` vs. `PessoaApiController`), mesmo estando em namespaces
+diferentes — deixa claro na IDE/stack trace/log qual dos dois está em jogo,
+e reforça que cada um trava acesso e regras de segurança separadamente
+(sessão+CSRF de um lado, Bearer+JWT do outro), mesmo chamando o mesmo
+Service por baixo.
+
+### Regra de arquitetura: Controller nunca toca Entity
+
+**Nenhum Controller (web ou API), em nenhum módulo, deve importar ou
+receber/devolver uma classe `Entity` do Doctrine.** Só o `Service` (e o
+`Repository`, por trás dele) enxerga a Entity — o Controller só troca
+`array`/`int` (id) com o Service. Vale pra `Pessoa`, `Modelo` (que ganhou
+`Modelo\Service\ModeloItemService` só por causa disso) e pro `Usuario` no
+módulo `Api` (`Auth\Service\UsuarioService` e o `RefreshTokenService`
+recebem/devolvem `id`/`array`, nunca `Auth\Entity\Usuario`).
+
+Por quê: se um Controller guarda uma referência à Entity, é questão de
+tempo até alguém fazer um `json_encode($entity)` ou `(array) $entity`
+"rápido" — e isso vaza propriedades internas do Doctrine (proxies, campos
+nunca pensados pra sair pra fora) em vez de passar pelo `toArray()`
+controlado da Entity. Manter a Entity presa ao Service (que já a usa pra
+persistir/consultar de qualquer forma) torna esse vazamento estruturalmente
+impossível, não só "algo que a gente toma cuidado pra não fazer".
+
+Endpoints da API (`Authorization: Bearer <token>` em todos):
+
+| Rota | Método | Corpo | Retorno |
+|---|---|---|---|
+| `/pessoas` | GET | — | `{ pessoas: [...] }` |
+| `/pessoas/show/:id` | GET | — | `{ pessoa: {...} }` |
+| `/pessoas/create` | POST | `multipart/form-data`: `nome`, `documento`, `email`, `telefone`, `foto` | `201 { pessoa: {...} }` |
+| `/pessoas/update/:id` | POST | idem `create` | `{ pessoa: {...} }` |
+| `/pessoas/delete/:id` | POST | — | `{ message: "Removido." }` |
+
+**A foto tirada pela câmera no app** entra como `multipart/form-data`
+(campo `foto`), igual um `<input type="file">` do dashboard — **não** é
+JSON, diferente de `/auth/login`. `foto_url` na resposta é relativo à
+mesma origem da API (ex.: `/uploads/pessoas/xxxx.jpg`); o app precisa
+prefixar com a própria `EXPO_PUBLIC_API_URL` pra montar a URL completa da
+imagem.
+
+Segurança do upload (`PessoaService::salvarFoto`): nome do arquivo salvo é
+sempre **aleatório** (nunca o nome enviado pelo cliente), a extensão vem do
+**MIME real do conteúdo** (`mime_content_type`, nunca do header informado
+pelo cliente), tamanho limitado a 5MB, e `public/uploads/.htaccess` bloqueia
+qualquer execução de script nessa pasta como defesa extra.
+
+> **Gotcha real que já pegamos aqui:** qualquer controller que devolve
+> `JsonModel` (como todos em `module/Api`) só vira JSON de verdade se a
+> `ViewJsonStrategy` do Laminas estiver registrada
+> (`view_manager.strategies` em `module/Api/config/module.config.php`) —
+> sem isso, a resposta tenta renderizar um `.phtml` inexistente e quebra
+> com 500. Já está registrado pra tudo que passa pelo módulo `Api`; se você
+> criar JSON fora dele, lembre de fazer o mesmo.
 
 ## Segurança
 

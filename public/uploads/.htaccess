@@ -1,0 +1,8 @@
+# Defesa em profundidade: mesmo que um arquivo com essas extensões acabe
+# aqui por engano, o Apache nunca deve executá-lo como script. O
+# PessoaService só grava .jpg/.png/.webp (extensão vem do MIME real do
+# conteúdo, não do que o cliente informou), então isso nunca deveria
+# disparar — mas custa nada garantir.
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phar|pl|py|cgi|asp|aspx|sh|exe)$">
+    Require all denied
+</FilesMatch>

@@ -1,7 +1,7 @@
 <?php
 /**
  * @var Laminas\View\Renderer\PhpRenderer $this
- * @var list<\Modelo\Entity\ModeloItem> $itens
+ * @var list<array{id: int|null, titulo: string, descricao: string|null}> $itens
  */
 $this->headTitle('Módulo Modelo');
 $deleteCsrf = new \Laminas\Form\Element\Csrf('delete_csrf');
@@ -36,18 +36,18 @@ $deleteCsrf = new \Laminas\Form\Element\Csrf('delete_csrf');
             <tbody class="divide-y divide-gray-100">
                 <?php foreach ($itens as $item): ?>
                 <tr>
-                    <td class="px-4 py-3 text-sm font-medium text-gray-900"><?= $this->escapeHtml($item->getTitulo()) ?></td>
-                    <td class="px-4 py-3 text-sm text-gray-600"><?= $this->escapeHtml($item->getDescricao() ?? '') ?></td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900"><?= $this->escapeHtml($item['titulo']) ?></td>
+                    <td class="px-4 py-3 text-sm text-gray-600"><?= $this->escapeHtml($item['descricao'] ?? '') ?></td>
                     <td class="px-4 py-3 text-right text-sm">
                         <a
-                            href="<?= $this->url('modelo', ['action' => 'edit', 'id' => $item->getId()]) ?>"
+                            href="<?= $this->url('modelo', ['action' => 'edit', 'id' => $item['id']]) ?>"
                             class="text-blue-600 hover:underline"
                         >
                             Editar
                         </a>
                         <form
                             method="post"
-                            action="<?= $this->url('modelo', ['action' => 'delete', 'id' => $item->getId()]) ?>"
+                            action="<?= $this->url('modelo', ['action' => 'delete', 'id' => $item['id']]) ?>"
                             class="inline"
                             onsubmit="return confirm('Excluir este item?');"
                         >

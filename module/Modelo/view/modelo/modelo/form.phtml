@@ -3,7 +3,7 @@
  * @var Laminas\View\Renderer\PhpRenderer $this
  * @var \Modelo\Form\ModeloItemForm $form
  * @var string $modo
- * @var \Modelo\Entity\ModeloItem|null $item
+ * @var array{id: int|null, titulo: string, descricao: string|null}|null $item
  */
 $this->headTitle($modo === 'edit' ? 'Editar item' : 'Novo item');
 $form->prepare();
@@ -13,7 +13,7 @@ $descricao = $form->get('descricao');
 $csrf = $form->get('modelo_item_csrf');
 
 $actionUrl = $modo === 'edit'
-    ? $this->url('modelo', ['action' => 'edit', 'id' => $item?->getId()])
+    ? $this->url('modelo', ['action' => 'edit', 'id' => $item['id'] ?? null])
     : $this->url('modelo', ['action' => 'add']);
 ?>
 <div class="max-w-xl">

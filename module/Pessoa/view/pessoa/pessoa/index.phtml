@@ -1,0 +1,75 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var list<array{id:int|null,nome:string,documento:string,email:string|null,telefone:string|null,foto_url:string|null}> $itens
+ */
+$this->headTitle('Pessoas');
+$deleteCsrf = new \Laminas\Form\Element\Csrf('delete_csrf');
+?>
+<div class="max-w-3xl">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-gray-900">Pessoas</h1>
+        <a
+            href="<?= $this->url('pessoa', ['action' => 'add']) ?>"
+            class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+        >
+            Nova pessoa
+        </a>
+    </div>
+    <p class="mt-2 text-sm text-gray-600">
+        Exemplo completo: CRUD com upload de foto, regra de negócio
+        compartilhada com a API em
+        <code class="text-gray-800">Pessoa\Service\PessoaService</code> —
+        o mesmo cadastro feito aqui aparece pro app, e vice-versa
+        (<code class="text-gray-800">Api\Controller\PessoaApiController</code>).
+    </p>
+
+    <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <?php if (empty($itens)): ?>
+        <p class="px-6 py-8 text-center text-sm text-gray-500">Nenhuma pessoa cadastrada ainda.</p>
+        <?php else: ?>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Foto</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Nome</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Documento</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <?php foreach ($itens as $pessoa): ?>
+                <tr>
+                    <td class="px-4 py-3">
+                        <?php if ($pessoa['foto_url']): ?>
+                        <img src="<?= $this->basePath(ltrim($pessoa['foto_url'], '/')) ?>" alt="" class="h-10 w-10 rounded-full object-cover">
+                        <?php else: ?>
+                        <div class="h-10 w-10 rounded-full bg-gray-200"></div>
+                        <?php endif; ?>
+                    </td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900"><?= $this->escapeHtml($pessoa['nome']) ?></td>
+                    <td class="px-4 py-3 text-sm text-gray-600"><?= $this->escapeHtml($pessoa['documento']) ?></td>
+                    <td class="px-4 py-3 text-right text-sm">
+                        <a
+                            href="<?= $this->url('pessoa', ['action' => 'edit', 'id' => $pessoa['id']]) ?>"
+                            class="text-blue-600 hover:underline"
+                        >
+                            Editar
+                        </a>
+                        <form
+                            method="post"
+                            action="<?= $this->url('pessoa', ['action' => 'delete', 'id' => $pessoa['id']]) ?>"
+                            class="inline"
+                            onsubmit="return confirm('Excluir esta pessoa?');"
+                        >
+                            <input type="hidden" name="delete_csrf" value="<?= $this->escapeHtmlAttr((string) $deleteCsrf->getValue()) ?>">
+                            <button type="submit" class="ml-3 text-red-600 hover:underline">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
+</div>

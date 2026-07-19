@@ -23,4 +23,5 @@ return [
     'Auth',
     'Api',
     'Modelo',
+    'Pessoa',
 ];

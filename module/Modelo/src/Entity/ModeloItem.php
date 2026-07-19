@@ -66,4 +66,19 @@ class ModeloItem
     {
         return $this->criadoEm;
     }
+
+    /**
+     * Representação pública — o Controller nunca deve receber esta Entity
+     * diretamente, só o array daqui (ver Modelo\Service\ModeloItemService).
+     *
+     * @return array{id: int|null, titulo: string, descricao: string|null}
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'titulo' => $this->titulo,
+            'descricao' => $this->descricao,
+        ];
+    }
 }

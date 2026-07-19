@@ -6,13 +6,12 @@ namespace Api\Controller;
 
 use Api\Service\JwtService;
 use Api\Service\RefreshTokenService;
-use Auth\Entity\Usuario;
 use Auth\Service\DoctrineAuthAdapter;
 use Auth\Service\LoginThrottleService;
-use Doctrine\ORM\EntityManagerInterface;
 use Laminas\Authentication\Result;
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\View\Model\JsonModel;
+use RuntimeException;
 
 /**
  * Login/refresh/logout da API consumida pelo app (contrato = app-modelo):
@@ -20,6 +19,9 @@ use Laminas\View\Model\JsonModel;
  *   POST /auth/refresh { refresh_token }   -> { token, refresh_token, user }
  *   POST /auth/logout  (Authorization: Bearer <token>) -> revoga os refresh
  *   tokens do usuário (o access token em si expira sozinho, é stateless).
+ *
+ * Este controller NUNCA importa/toca `Auth\Entity\Usuario` — só o array já
+ * devolvido por `DoctrineAuthAdapter`/`RefreshTokenService`.
  */
 final class AuthController extends AbstractActionController
 {
@@ -28,7 +30,6 @@ final class AuthController extends AbstractActionController
         private readonly LoginThrottleService $throttle,
         private readonly JwtService $jwt,
         private readonly RefreshTokenService $refreshTokens,
-        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -64,9 +65,20 @@ final class AuthController extends AbstractActionController
 
         /** @var array{id:int,login:string,email:string,nome:string,role:string} $usuarioArray */
         $usuarioArray = $result->getIdentity();
-        $usuarioEntity = $this->entityManager->getRepository(Usuario::class)->find($usuarioArray['id']);
 
-        return $this->emitirTokens($usuarioEntity, $usuarioArray);
+        try {
+            $refresh = $this->refreshTokens->emitirParaUsuario($usuarioArray['id']);
+        } catch (RuntimeException $e) {
+            return $this->jsonError($e->getMessage(), 500);
+        }
+
+        $accessToken = $this->jwt->issue(['sub' => $usuarioArray['id'], 'role' => $usuarioArray['role']]);
+
+        return new JsonModel([
+            'token' => $accessToken,
+            'refresh_token' => $refresh['token'],
+            'user' => $usuarioArray,
+        ]);
     }
 
     public function refreshAction(): JsonModel
@@ -87,13 +99,13 @@ final class AuthController extends AbstractActionController
             return $this->jsonError('Sessão expirada. Faça login novamente.', 401);
         }
 
-        $usuario = $resultado['usuario'];
-        $accessToken = $this->jwt->issue(['sub' => $usuario->getId(), 'role' => $usuario->getRole()]);
+        $usuarioArray = $resultado['user'];
+        $accessToken = $this->jwt->issue(['sub' => $usuarioArray['id'], 'role' => $usuarioArray['role']]);
 
         return new JsonModel([
             'token' => $accessToken,
             'refresh_token' => $resultado['token'],
-            'user' => $usuario->toArray(),
+            'user' => $usuarioArray,
         ]);
     }
 
@@ -105,30 +117,12 @@ final class AuthController extends AbstractActionController
 
         $claims = $this->params()->fromRoute('jwt_claims');
         $usuarioId = is_array($claims) ? (int) ($claims['sub'] ?? 0) : 0;
-        $usuario = $usuarioId > 0 ? $this->entityManager->getRepository(Usuario::class)->find($usuarioId) : null;
 
-        if ($usuario !== null) {
-            $this->refreshTokens->revogarTodosDoUsuario($usuario);
+        if ($usuarioId > 0) {
+            $this->refreshTokens->revogarTodosDoUsuarioId($usuarioId);
         }
 
         return new JsonModel(['message' => 'Sessão encerrada.']);
-    }
-
-    /** @param array{id:int,login:string,email:string,nome:string,role:string} $usuarioArray */
-    private function emitirTokens(?Usuario $usuarioEntity, array $usuarioArray): JsonModel
-    {
-        if ($usuarioEntity === null) {
-            return $this->jsonError('Usuário não encontrado.', 500);
-        }
-
-        $accessToken = $this->jwt->issue(['sub' => $usuarioArray['id'], 'role' => $usuarioArray['role']]);
-        $refresh = $this->refreshTokens->emitir($usuarioEntity);
-
-        return new JsonModel([
-            'token' => $accessToken,
-            'refresh_token' => $refresh['token'],
-            'user' => $usuarioArray,
-        ]);
     }
 
     /** @return array<string, mixed> */

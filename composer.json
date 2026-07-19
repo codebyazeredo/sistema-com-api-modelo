@@ -33,7 +33,8 @@
             "Application\\": "module/Application/src/",
             "Auth\\": "module/Auth/src/",
             "Api\\": "module/Api/src/",
-            "Modelo\\": "module/Modelo/src/"
+            "Modelo\\": "module/Modelo/src/",
+            "Pessoa\\": "module/Pessoa/src/"
         }
     },
     "autoload-dev": {
@@ -84,7 +85,9 @@
             "vendor/bin/doctrine-module orm:clear-cache:result",
             "vendor/bin/doctrine-module orm:clear-cache:query"
         ],
-        "database:enum": "php bin/database-enum.php"
+        "database:enum": "php bin/database-enum.php",
+
+        "user:create": "php bin/create-user.php"
     },
     "scripts-descriptions": {
         "clear-config-cache": "Clears merged config cache. Required for config changes to be applied.",
@@ -103,7 +106,8 @@
         "database:check": "Validate that entity mappings match the current database schema.",
         "database:sql": "Preview the SQL that database:update would run, without applying it.",
         "database:clear": "Clear Doctrine's metadata/result/query caches.",
-        "database:enum": "Placeholder to sync enum/lookup tables for your domain (edit bin/database-enum.php)."
+        "database:enum": "Placeholder to sync enum/lookup tables for your domain (edit bin/database-enum.php).",
+        "user:create": "Create (or reset the password of) a user. Args after --: login senha nome email."
     },
     "config": {
         "sort-packages": true,

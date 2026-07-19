@@ -1,0 +1,117 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var \Pessoa\Form\PessoaForm $form
+ * @var string $modo
+ * @var array{id:int|null,nome:string,documento:string,email:string|null,telefone:string|null,foto_url:string|null}|null $item
+ * @var string|null $erro
+ */
+$this->headTitle($modo === 'edit' ? 'Editar pessoa' : 'Nova pessoa');
+$form->prepare();
+
+$nome = $form->get('nome');
+$documento = $form->get('documento');
+$email = $form->get('email');
+$telefone = $form->get('telefone');
+$csrf = $form->get('pessoa_csrf');
+
+$actionUrl = $modo === 'edit'
+    ? $this->url('pessoa', ['action' => 'edit', 'id' => $item['id'] ?? null])
+    : $this->url('pessoa', ['action' => 'add']);
+?>
+<div class="max-w-xl">
+    <h1 class="text-2xl font-semibold text-gray-900">
+        <?= $modo === 'edit' ? 'Editar pessoa' : 'Nova pessoa' ?>
+    </h1>
+
+    <form
+        method="post"
+        action="<?= $actionUrl ?>"
+        enctype="multipart/form-data"
+        class="mt-6 space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+    >
+        <?php if ($erro): ?>
+        <div class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"><?= $this->escapeHtml($erro) ?></div>
+        <?php endif; ?>
+
+        <?php if ($modo === 'edit' && ! empty($item['foto_url'])): ?>
+        <img
+            src="<?= $this->basePath(ltrim($item['foto_url'], '/')) ?>"
+            alt=""
+            class="h-16 w-16 rounded-full object-cover"
+        >
+        <?php endif; ?>
+
+        <div>
+            <label for="nome" class="block text-sm font-medium text-gray-700">
+                <?= $this->escapeHtml($nome->getLabel()) ?>
+            </label>
+            <input
+                type="text"
+                name="nome"
+                id="nome"
+                value="<?= $this->escapeHtmlAttr((string) $nome->getValue()) ?>"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+        </div>
+
+        <div>
+            <label for="documento" class="block text-sm font-medium text-gray-700">
+                <?= $this->escapeHtml($documento->getLabel()) ?>
+            </label>
+            <input
+                type="text"
+                name="documento"
+                id="documento"
+                value="<?= $this->escapeHtmlAttr((string) $documento->getValue()) ?>"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+        </div>
+
+        <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">
+                <?= $this->escapeHtml($email->getLabel()) ?>
+            </label>
+            <input
+                type="email"
+                name="email"
+                id="email"
+                value="<?= $this->escapeHtmlAttr((string) $email->getValue()) ?>"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+        </div>
+
+        <div>
+            <label for="telefone" class="block text-sm font-medium text-gray-700">
+                <?= $this->escapeHtml($telefone->getLabel()) ?>
+            </label>
+            <input
+                type="text"
+                name="telefone"
+                id="telefone"
+                value="<?= $this->escapeHtmlAttr((string) $telefone->getValue()) ?>"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+        </div>
+
+        <div>
+            <label for="foto" class="block text-sm font-medium text-gray-700">Foto</label>
+            <input
+                type="file"
+                name="foto"
+                id="foto"
+                accept="image/jpeg,image/png,image/webp"
+                class="mt-1 block w-full text-sm text-gray-700"
+            >
+        </div>
+
+        <input type="hidden" name="pessoa_csrf" value="<?= $this->escapeHtmlAttr((string) $csrf->getValue()) ?>">
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                Salvar
+            </button>
+            <a href="<?= $this->url('pessoa') ?>" class="text-sm text-gray-600 hover:underline">Cancelar</a>
+        </div>
+    </form>
+</div>

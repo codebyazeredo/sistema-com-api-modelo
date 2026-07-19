@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Modelo;
+namespace Pessoa;
 
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Laminas\Router\Http\Segment;
@@ -10,16 +10,16 @@ use Laminas\Router\Http\Segment;
 return [
     'router' => [
         'routes' => [
-            'modelo' => [
+            'pessoa' => [
                 'type' => Segment::class,
                 'options' => [
-                    'route' => '/modelo[/:action[/:id]]',
+                    'route' => '/pessoa[/:action[/:id]]',
                     'constraints' => [
                         'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
                         'id' => '[0-9]+',
                     ],
                     'defaults' => [
-                        'controller' => Controller\ModeloController::class,
+                        'controller' => Controller\PessoaController::class,
                         'action' => 'index',
                     ],
                 ],
@@ -29,25 +29,32 @@ return [
 
     'controllers' => [
         'factories' => [
-            Controller\ModeloController::class => Controller\Factory\ModeloControllerFactory::class,
+            Controller\PessoaController::class => Controller\Factory\PessoaControllerFactory::class,
         ],
     ],
 
     'service_manager' => [
         'factories' => [
-            Service\ModeloItemService::class => Service\Factory\ModeloItemServiceFactory::class,
+            Service\PessoaService::class => Service\Factory\PessoaServiceFactory::class,
         ],
+    ],
+
+    // Onde as fotos ficam salvas. Não é segredo — pode ficar aqui (diferente
+    // de config/autoload/local.php, reservado pra credenciais/segredos).
+    // Reaproveitado por Api\Controller\PessoaController (mesmo Service).
+    'pessoa' => [
+        'uploads_dir' => __DIR__ . '/../../../public/uploads/pessoas',
     ],
 
     'doctrine' => [
         'driver' => [
-            'modelo_entities' => [
+            'pessoa_entities' => [
                 'class' => AttributeDriver::class,
                 'paths' => [__DIR__ . '/../src/Entity'],
             ],
             'orm_default' => [
                 'drivers' => [
-                    'Modelo\Entity' => 'modelo_entities',
+                    'Pessoa\Entity' => 'pessoa_entities',
                 ],
             ],
         ],
@@ -55,9 +62,9 @@ return [
 
     'view_manager' => [
         'template_map' => [
-            'modelo/modelo/index' => __DIR__ . '/../view/modelo/modelo/index.phtml',
-            'modelo/modelo/add' => __DIR__ . '/../view/modelo/modelo/form.phtml',
-            'modelo/modelo/edit' => __DIR__ . '/../view/modelo/modelo/form.phtml',
+            'pessoa/pessoa/index' => __DIR__ . '/../view/pessoa/pessoa/index.phtml',
+            'pessoa/pessoa/add' => __DIR__ . '/../view/pessoa/pessoa/form.phtml',
+            'pessoa/pessoa/edit' => __DIR__ . '/../view/pessoa/pessoa/form.phtml',
         ],
         'template_path_stack' => [
             __DIR__ . '/../view',

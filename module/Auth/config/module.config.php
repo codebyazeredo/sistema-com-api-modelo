@@ -44,6 +44,7 @@ return [
         'factories' => [
             Service\DoctrineAuthAdapter::class => Service\Factory\DoctrineAuthAdapterFactory::class,
             Service\LoginThrottleService::class => Service\Factory\LoginThrottleServiceFactory::class,
+            Service\UsuarioService::class => Service\Factory\UsuarioServiceFactory::class,
             AuthenticationService::class => Service\Factory\AuthenticationServiceFactory::class,
         ],
     ],

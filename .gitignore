@@ -14,3 +14,8 @@ config/autoload/local.php
 node_modules/
 public/css/app.css
 public/js/alpine.min.js
+
+# Uploads de usuário (runtime — não versionado, exceto o .htaccess e o
+# .gitkeep que mantêm a estrutura de pastas)
+public/uploads/pessoas/*
+!public/uploads/pessoas/.gitkeep

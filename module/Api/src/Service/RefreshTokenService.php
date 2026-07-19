@@ -9,6 +9,7 @@ use Api\Repository\RefreshTokenRepository;
 use Auth\Entity\Usuario;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
 
 /**
  * Refresh token opaco (não é JWT): valor aleatório de 256 bits — só o hash
@@ -16,6 +17,12 @@ use Doctrine\ORM\EntityManagerInterface;
  * uma única vez. Rotativo: cada uso troca por um novo e revoga o antigo;
  * reapresentar um token já revogado é tratado como possível roubo e revoga
  * TODOS os tokens do usuário (força novo login em todos os dispositivos).
+ *
+ * IMPORTANTE: nenhum método PÚBLICO recebe ou devolve a Entity `Usuario` —
+ * só `id` (int) na entrada e `array` (via `Usuario::toArray()`) na saída.
+ * A Entity só é tocada internamente (`emitir()` é privado), porque o
+ * Doctrine precisa dela pra montar a relação do `RefreshToken` — isso nunca
+ * deve vazar pro Controller.
  */
 final class RefreshTokenService
 {
@@ -26,20 +33,18 @@ final class RefreshTokenService
     }
 
     /** @return array{token: string, expiresAt: DateTimeImmutable} */
-    public function emitir(Usuario $usuario): array
+    public function emitirParaUsuario(int $usuarioId): array
     {
-        $tokenBruto = bin2hex(random_bytes(32));
-        $expiraEm = new DateTimeImmutable(sprintf('+%d seconds', $this->ttlSeconds));
+        $usuario = $this->entityManager->find(Usuario::class, $usuarioId);
+        if ($usuario === null) {
+            throw new RuntimeException('Usuário não encontrado.');
+        }
 
-        $entidade = new RefreshToken($usuario, hash('sha256', $tokenBruto), $expiraEm);
-        $this->entityManager->persist($entidade);
-        $this->entityManager->flush();
-
-        return ['token' => $tokenBruto, 'expiresAt' => $expiraEm];
+        return $this->emitir($usuario);
     }
 
     /**
-     * @return array{usuario: Usuario, token: string, expiresAt: DateTimeImmutable}|null
+     * @return array{user: array{id:int,login:string,email:string,nome:string,role:string}, token: string, expiresAt: DateTimeImmutable}|null
      *         null quando o token é inválido, expirado, ou reuso de um token
      *         já revogado (nesse caso todos os tokens do usuário são revogados).
      */
@@ -54,7 +59,7 @@ final class RefreshTokenService
         }
 
         if ($entidade->estaRevogado()) {
-            $repositorio->revogarTodosDoUsuario($entidade->getUsuario());
+            $repositorio->revogarTodosPorUsuarioId((int) $entidade->getUsuario()->getId());
             $this->entityManager->flush();
 
             return null;
@@ -69,14 +74,27 @@ final class RefreshTokenService
         $novo = $this->emitir($usuario);
         $this->entityManager->flush();
 
-        return ['usuario' => $usuario, 'token' => $novo['token'], 'expiresAt' => $novo['expiresAt']];
+        return ['user' => $usuario->toArray(), 'token' => $novo['token'], 'expiresAt' => $novo['expiresAt']];
     }
 
-    public function revogarTodosDoUsuario(Usuario $usuario): void
+    public function revogarTodosDoUsuarioId(int $usuarioId): void
     {
         /** @var RefreshTokenRepository $repositorio */
         $repositorio = $this->entityManager->getRepository(RefreshToken::class);
-        $repositorio->revogarTodosDoUsuario($usuario);
+        $repositorio->revogarTodosPorUsuarioId($usuarioId);
         $this->entityManager->flush();
+    }
+
+    /** @return array{token: string, expiresAt: DateTimeImmutable} */
+    private function emitir(Usuario $usuario): array
+    {
+        $tokenBruto = bin2hex(random_bytes(32));
+        $expiraEm = new DateTimeImmutable(sprintf('+%d seconds', $this->ttlSeconds));
+
+        $entidade = new RefreshToken($usuario, hash('sha256', $tokenBruto), $expiraEm);
+        $this->entityManager->persist($entidade);
+        $this->entityManager->flush();
+
+        return ['token' => $tokenBruto, 'expiresAt' => $expiraEm];
     }
 }

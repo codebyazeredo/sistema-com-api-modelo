@@ -6,10 +6,25 @@ namespace Api;
 
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Laminas\Router\Http\Literal;
+use Laminas\Router\Http\Segment;
 
 return [
     'router' => [
         'routes' => [
+            'api-pessoas' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/pessoas[/:action[/:id]]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PessoaApiController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
             'api-auth-login' => [
                 'type' => Literal::class,
                 'options' => [
@@ -57,6 +72,17 @@ return [
         'factories' => [
             Controller\AuthController::class => Controller\Factory\AuthControllerFactory::class,
             Controller\MeController::class => Controller\Factory\MeControllerFactory::class,
+            Controller\PessoaApiController::class => Controller\Factory\PessoaApiControllerFactory::class,
+        ],
+    ],
+
+    // Sem isto, um JsonModel devolvido por qualquer controller da API cai no
+    // renderizador padrão de .phtml (que não existe pra esses controllers) em
+    // vez de virar JSON de verdade. Só afeta respostas que já são JsonModel —
+    // as telas normais do dashboard (ViewModel) continuam intactas.
+    'view_manager' => [
+        'strategies' => [
+            'ViewJsonStrategy',
         ],
     ],
 

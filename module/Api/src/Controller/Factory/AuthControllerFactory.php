@@ -20,7 +20,6 @@ final class AuthControllerFactory
             $container->get(LoginThrottleService::class),
             $container->get(JwtService::class),
             $container->get(RefreshTokenService::class),
-            $container->get('doctrine.entitymanager.orm_default'),
         );
     }
 }
