@@ -297,6 +297,12 @@ docker-compose up -d --build
 Sobe em `http://localhost:8080`. O `Dockerfile` já habilita `pdo_mysql`
 (necessário para o Doctrine conforme configurado em `config/autoload/global.php`).
 
+## Licença
+
+Este projeto está licenciado sob a [MIT License](LICENSE) — livre para usar,
+copiar, modificar e redistribuir (inclusive em projetos fechados/comerciais),
+desde que o aviso de copyright seja mantido.
+
 ---
 
 Desenvolvido e mantido por: [@codebyazeredo](https://github.com/codebyazeredo)

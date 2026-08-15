@@ -2,7 +2,7 @@
     "name": "branet/sistema-com-api-modelo",
     "description": "Esqueleto Laminas (web + API JWT) para novos sistemas e backends de app",
     "type": "project",
-    "license": "proprietary",
+    "license": "MIT",
     "keywords": [
         "laminas",
         "mvc",
